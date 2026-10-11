@@ -12,11 +12,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/prathameshppawar/claude-context-sync.git"
+    "url": "https://github.com/Prathameshppawar/claude-context-sync.git"
   },
-  "homepage": "https://github.com/prathameshppawar/claude-context-sync#readme",
+  "homepage": "https://github.com/Prathameshppawar/claude-context-sync#readme",
   "bugs": {
-    "url": "https://github.com/prathameshppawar/claude-context-sync/issues"
+    "url": "https://github.com/Prathameshppawar/claude-context-sync/issues"
   },
   "engines": {
     "vscode": "^1.85.0"
