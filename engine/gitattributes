@@ -1,0 +1,5 @@
+# No line-ending conversion: memory notes keep exactly the bytes Claude wrote.
+* -text
+# A note edited on two machines merges line by line instead of conflicting.
+projects/*/memory/** merge=union
+projects/*/chats/** binary

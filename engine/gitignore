@@ -1,0 +1,3 @@
+# per-machine settings, sync state and log
+.local/
+*.tmp
