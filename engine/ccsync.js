@@ -18,7 +18,7 @@ const STATE_FILE = path.join(LOCAL, 'state.json');
 const LOG_FILE = path.join(LOCAL, 'sync.log');
 const NOTICE_FILE = path.join(LOCAL, 'notices.txt');
 const LOCK_FILE = path.join(LOCAL, 'sync.lock');
-const ENGINE_VERSION = 3; // bump when other copies of this file should update themselves
+const ENGINE_VERSION = 5; // bump when other copies of this file should update themselves
 const TEAM_FILE = path.join(REPO, 'team.json'); // present = a team repo: { owner, created }
 const REVIEW_FILE = path.join(REPO, 'review.json'); // the owner's decisions on teammates' changes
 const TEAM_BLOCK_START = '<!-- claude-context: team notes, copied from team/MEMORY.md. Do not edit here. -->';
@@ -1176,7 +1176,11 @@ function printList(list) {
 
 function changeSelection(refs, on, json) {
   const cfg = loadConfig();
-  if (teamInfo()) die('This is a team repo: it holds shared memory only. Chats sync through your personal context repo.');
+  // In a team repo only the owner may share a chat: it goes to main, and every teammate's
+  // sync imports it. A teammate's own chats sync through their personal context repo.
+  if (teamInfo() && whoAmI(cfg).role !== 'owner') {
+    die(`This is a team repo: only its owner (${teamInfo().owner}) shares chats here. Your chats sync through your personal context repo.`);
+  }
   const st0 = loadState();
   const picked = resolveRefs(refs, localChats(cfg, st0), cfg);
   const done = withLock(60000, () => {
@@ -1277,7 +1281,8 @@ function stateModel() {
       chats.push({ id, title: meta.title || id, local: false, size: newest ? newest.bytes : 0, mtimeMs: newest ? Date.parse(newest.updated) : 0, synced: true, ...extra });
     }
     chats.sort((a, b) => b.mtimeMs - a.mtimeMs);
-    projects.push({ name: proj, dir, claudeDir, attach, memory: { files: memFiles, linked }, chats: team ? [] : chats });
+    // In a team repo, "synced" chats are the ones the owner shares with the team.
+    projects.push({ name: proj, dir, claudeDir, attach, memory: { files: memFiles, linked }, chats });
   }
   saveTitlesIfFree(st);
   let notices = [];

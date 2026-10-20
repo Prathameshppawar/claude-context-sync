@@ -32,15 +32,19 @@ branch. Nothing reaches the shared memory until you accept it, in VS Code or as 
 pull request. **Merge with Claude** combines their version with yours, flags
 contradictions and drops passwords.
 
+**Hand over a whole conversation.** As a team repo's owner, share a chat with the team.
+Teammates get the full transcript and can resume it in their own Claude, picking up
+exactly where it left off.
+
 **Keep private things private.** Your own notes and chats stay in your personal repo. A
-team repo holds only that project's team notes, and teammates never see your other
-projects.
+team repo holds only that project's team notes and the chats its owner chooses to share,
+and teammates never see your other projects.
 
 ## What you get
 
 - **Sidebar.**
   - **Chats:** tick a chat to sync it. ▶ resumes it, ☁↓ pulls it.
-  - **Team:** review what teammates propose.
+  - **Team:** review what teammates propose, and see the chats shared with the team.
   - **Projects:** turn sync on for one folder or for every folder Claude has worked in.
 - **Home page.** Live status, setup steps or quick actions, and how it all works.
 - **Status bar.** The last sync time, and how many team changes are waiting for review.
@@ -79,6 +83,9 @@ You need git, and Node 18+ on your `PATH` (the Claude Code hooks run with it).
 3. Each teammate clicks **Join a team repo** and pastes its URL.
 4. Their changes show up in your Team view. For each one, choose **Compare**, **Merge with
    Claude**, **Accept** or **Reject**.
+5. To share a chat, click **+** next to **Shared chats** and pick it. Teammates get it at
+   their next sync and press ▶ to continue it. Only the owner shares chats; × stops sharing
+   one.
 
 ## How it works
 
@@ -93,6 +100,8 @@ You need git, and Node 18+ on your `PATH` (the Claude Code hooks run with it).
 - **Team repos.** These keep the owner's approved notes on `main`, and each teammate's
   proposals on `people/<name>`. In your memory, the team notes appear in a `team/`
   folder, and their index is copied into your own `MEMORY.md`, so Claude sees both.
+  Chats the owner shares are stored on `main` like any synced chat, and every teammate's
+  sync brings them in.
 - **Merge with Claude.** This runs the Claude Code binary that ships with the Claude Code
   extension. It uses your own login, with no tools enabled and no session saved.
 - **No servers.** Everything is plain git between your machines and your GitHub repos.
@@ -107,6 +116,7 @@ You need git, and Node 18+ on your `PATH` (the Claude Code hooks run with it).
 | Context Sync: Pick Chats to Sync… | Choose chats from a list |
 | Context Sync: Turn On Sync for This Project / All Projects | Start syncing memory |
 | Context Sync: Create a Team Repo for This Project / Join a Team Repo | Share a project's memory |
+| Share Chats With the Team… (Team view, owner) | Put chats on the team repo for everyone |
 | Context Sync: Open Sync Log / Open Context Repo / Show Sync Problems | See what happened |
 
 ## Settings

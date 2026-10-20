@@ -2,7 +2,7 @@
   "name": "context-sync",
   "displayName": "Context Sync for Claude Code",
   "description": "Keep Claude Code memory and the chats you pick in a private git repo you own. Continue chats on any machine, and share a project's memory with your team, with owner review.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "publisher": "prathameshppawar",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -246,6 +246,18 @@
         "title": "Discard Merged Version",
         "category": "Context Sync",
         "icon": "$(discard)"
+      },
+      {
+        "command": "claudeContext.shareChatWithTeam",
+        "title": "Share Chats With the Team…",
+        "category": "Context Sync",
+        "icon": "$(add)"
+      },
+      {
+        "command": "claudeContext.unshareChatFromTeam",
+        "title": "Stop Sharing With the Team",
+        "category": "Context Sync",
+        "icon": "$(close)"
       }
     ],
     "menus": {
@@ -396,6 +408,36 @@
           "command": "claudeContext.openTeamOnGitHub",
           "when": "view == claudeContext.team && viewItem =~ /^(teammate|teamrepo)/",
           "group": "inline@2"
+        },
+        {
+          "command": "claudeContext.shareChatWithTeam",
+          "when": "view == claudeContext.team && viewItem == \"sharedchats owner\"",
+          "group": "inline@1"
+        },
+        {
+          "command": "claudeContext.shareChatWithTeam",
+          "when": "view == claudeContext.team && viewItem == \"sharedchats owner\"",
+          "group": "1_share@1"
+        },
+        {
+          "command": "claudeContext.resumeChat",
+          "when": "view == claudeContext.team && viewItem =~ /^teamchat .* local$/",
+          "group": "inline@1"
+        },
+        {
+          "command": "claudeContext.unshareChatFromTeam",
+          "when": "view == claudeContext.team && viewItem =~ /^teamchat owner/",
+          "group": "inline@2"
+        },
+        {
+          "command": "claudeContext.resumeChat",
+          "when": "view == claudeContext.team && viewItem =~ /^teamchat .* local$/",
+          "group": "1_open@1"
+        },
+        {
+          "command": "claudeContext.unshareChatFromTeam",
+          "when": "view == claudeContext.team && viewItem =~ /^teamchat owner/",
+          "group": "1_open@2"
         }
       ],
       "commandPalette": [
@@ -446,6 +488,14 @@
         {
           "command": "claudeContext.discardMerged",
           "when": "claudeContext.mergeActive"
+        },
+        {
+          "command": "claudeContext.shareChatWithTeam",
+          "when": "false"
+        },
+        {
+          "command": "claudeContext.unshareChatFromTeam",
+          "when": "false"
         }
       ],
       "editor/title": [

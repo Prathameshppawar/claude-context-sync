@@ -167,18 +167,33 @@ try {
   assert.strictEqual(review(win, tWin).pending.length, 0, 'decision made on mac counts on win');
   step("owner's second machine writes main and shares the review");
 
-  run(win, tWin, ['add', 'current'], { fail: true });
+  // The owner shares one chat through the team repo; the teammate receives it, but cannot share.
+  const chatId = '11111111-2222-4333-8444-555555555555';
+  const turn = (role, text) => JSON.stringify({ type: role, sessionId: chatId, cwd: win.proj, uuid: require('crypto').randomUUID(), message: { role, content: text } });
+  fs.writeFileSync(path.join(win.slug, `${chatId}.jsonl`), [turn('user', 'How is the app arranged?'), turn('assistant', `Read ${path.join(win.proj, 'README.md')} first.`)].join('\n') + '\n');
+  run(win, tWin, ['add', chatId]);
+  assert.ok(g(teamOrigin, 'ls-tree', '-r', '--name-only', 'main').includes(`projects/app/chats/${chatId}/meta.json`), 'shared chat on main');
+  run(rahul, tRahul, ['sync']);
+  const got = read(path.join(rahul.slug, `${chatId}.jsonl`));
+  assert.ok(got.includes(`"cwd":${JSON.stringify(rahul.proj)}`), "teammate's copy runs in their own folder");
+  fs.writeFileSync(path.join(rahul.slug, 'aaaaaaaa-2222-4333-8444-555555555555.jsonl'), turn('user', 'mine') + '\n');
+  assert.ok(run(rahul, tRahul, ['add', 'aaaaaaaa-2222-4333-8444-555555555555'], { fail: true }).includes('only its owner'));
+  step("the owner shares a chat with the team; a teammate can't");
+
   const before = fs.readFileSync(path.join(tWin, 'ccsync.js'), 'utf8');
   const newer = path.join(SB, 'newer.js');
   fs.writeFileSync(newer, before.replace(/const ENGINE_VERSION = (\d+)/, (m, v) => `const ENGINE_VERSION = ${Number(v) + 1}`));
   const up = JSON.parse(run(win, tWin, ['self-update', '--from', newer]));
   assert.ok(up.updated, 'self-update replaces an older engine');
   assert.ok(g(tWin, 'log', '-1', '--format=%s').startsWith('ccsync: update to engine'));
-  step('team repos refuse chats; an older engine updates itself');
+  step('an older engine updates itself');
 
   const state = JSON.parse(run(win, tWin, ['state']));
   assert.strictEqual(state.team.role, 'owner');
   assert.strictEqual(fs.realpathSync(state.projects[0].attach), fs.realpathSync(privateMem));
+  assert.ok(state.projects[0].chats.some(c => c.id === chatId && c.synced), 'state lists the shared chat for the Team view');
+  const rState = JSON.parse(run(rahul, tRahul, ['state']));
+  assert.ok(rState.projects[0].chats.some(c => c.id === chatId && c.synced && c.local), "the teammate's state lists it too, already local");
   step('state view reports the team role');
 
   fs.rmSync(SB, { recursive: true, force: true });

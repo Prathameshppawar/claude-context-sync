@@ -317,6 +317,33 @@ function changeNode(r, c) {
   return node;
 }
 
+// Chats the owner shares go to main; every teammate's sync brings them in.
+function sharedChatsNode(r, proj) {
+  const t = r.state.team;
+  const owner = t.role === 'owner';
+  const shared = proj ? proj.chats.filter(c => c.synced) : [];
+  const item = new TreeItem('Shared chats', shared.length ? Collapse.Expanded : Collapse.None);
+  item.id = `sharedchats:${r.path}`;
+  item.iconPath = new ThemeIcon('comment-discussion');
+  item.description = shared.length ? String(shared.length) : owner ? 'none yet · + to share one' : 'none yet';
+  item.tooltip = owner
+    ? 'Chats you share here reach everyone on the team at their next sync, whole transcript included. Teammates can resume them.'
+    : `Chats ${t.owner} shared with the team. They arrive when you sync; resume one to continue it on your own.`;
+  item.contextValue = `sharedchats ${t.role}`;
+  const children = shared.map(c => {
+    const ci = new TreeItem(c.title, Collapse.None);
+    ci.id = `teamchat:${r.path}:${c.id}`;
+    ci.description = `${c.local ? '' : 'not here yet · '}${fmtBytes(c.size)} · ${ago(c.mtimeMs)}`;
+    ci.tooltip = chatTooltip(c);
+    ci.iconPath = new ThemeIcon(c.local ? 'comment-discussion' : 'cloud-download');
+    ci.contextValue = `teamchat ${t.role} ${c.local ? 'local' : 'remote'}`;
+    const node = { kind: 'teamchat', repo: r, project: proj, chat: c, item: ci };
+    if (c.local) ci.command = { command: 'claudeContext.resumeChat', title: 'Resume in Claude', arguments: [node] };
+    return node;
+  });
+  return { kind: 'sharedchats', repo: r, project: proj, item, children };
+}
+
 function teamRepoNode(r) {
   const t = r.state.team;
   const proj = r.state.projects[0];
@@ -336,11 +363,45 @@ function teamRepoNode(r) {
       pi.contextValue = `teammate${pp.pending ? ' pending' : ''}`;
       return { kind: 'person', repo: r, person: pp.person, item: pi, children: t.pending.filter(c => c.person === pp.person).map(c => changeNode(r, c)) };
     });
-    return { kind: 'team', repo: r, item, children };
+    return { kind: 'team', repo: r, item, children: [sharedChatsNode(r, proj), ...children] };
   }
   item.description = t.proposals.length ? `${t.proposals.length} waiting for ${t.owner}` : `owned by ${t.owner} · all accepted`;
   item.tooltip = `Team repo owned by ${t.owner} (${r.path}). Your team notes go to ${t.branch} and reach everyone once ${t.owner} accepts them.`;
-  return { kind: 'team', repo: r, item, children: t.proposals.map(c => changeNode(r, c)) };
+  return { kind: 'team', repo: r, item, children: [sharedChatsNode(r, proj), ...t.proposals.map(c => changeNode(r, c))] };
+}
+
+async function shareChatWithTeam(node) {
+  const r = node && node.repo;
+  const proj = node && node.project;
+  if (!r || !proj || r.state.team.role !== 'owner') return;
+  const candidates = proj.chats.filter(c => c.local && !c.synced).sort((a, b) => b.mtimeMs - a.mtimeMs);
+  if (!candidates.length) return vscode.window.showInformationMessage(`No unshared chats in ${path.basename(proj.dir)} on this machine.`);
+  const picks = await vscode.window.showQuickPick(
+    candidates.map(c => ({ label: c.title, description: `${fmtBytes(c.size)} · ${ago(c.mtimeMs)}`, detail: c.id, chat: c })),
+    { title: `Share chats with the ${path.basename(proj.dir)} team`, canPickMany: true, matchOnDetail: true, ignoreFocusOut: true },
+  );
+  if (!picks || !picks.length) return;
+  const yes = 'Share';
+  const what = picks.length > 1 ? `${picks.length} chats` : `"${picks[0].label}"`;
+  const answer = await vscode.window.showWarningMessage(
+    `Share ${what} with everyone on this team repo?`,
+    { modal: true, detail: 'The whole transcript goes, including file contents, command output and anything pasted into it. Teammates can read and resume it. Check it holds nothing private first.' },
+    yes,
+  );
+  if (answer !== yes) return;
+  await act('sharing with the team', r.path, ['add', ...picks.map(p => p.chat.id)], vscode.ProgressLocation.Notification);
+}
+
+async function unshareChatFromTeam(node) {
+  if (!node || !node.chat || node.repo.state.team.role !== 'owner') return;
+  const yes = 'Stop sharing';
+  const answer = await vscode.window.showWarningMessage(
+    `Stop sharing "${node.chat.title}" with the team?`,
+    { modal: true, detail: 'It leaves the team repo. Copies teammates already have stay on their machines.' },
+    yes,
+  );
+  if (answer !== yes) return;
+  await act('removing a shared chat', node.repo.path, ['remove', node.chat.id]);
 }
 
 // ---------- refresh, status bar, watchers ----------
@@ -1276,6 +1337,8 @@ function activate(ctx) {
   cmd('claudeContext.reviewMerge', reviewMerge);
   cmd('claudeContext.reviewAcceptAll', reviewAcceptAll);
   cmd('claudeContext.openTeamOnGitHub', openOnGitHub);
+  cmd('claudeContext.shareChatWithTeam', shareChatWithTeam);
+  cmd('claudeContext.unshareChatFromTeam', unshareChatFromTeam);
   cmd('claudeContext.acceptMerged', () => acceptMerged());
   cmd('claudeContext.discardMerged', () => discardMerged());
   cmd('claudeContext.showNotices', showNotices);

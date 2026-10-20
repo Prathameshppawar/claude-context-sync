@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.1.0
+
+- **Share chats with your team.** A team repo's owner can now share chats. In the Team
+  view, **Shared chats** has a **+** button that picks chats and asks for confirmation
+  first, because the whole transcript goes. Teammates get shared chats at their next
+  sync and resume them with ▶. Only the owner shares; × stops sharing one, and copies
+  teammates already have stay with them.
+- **Sync tool, engine 5.** It updates itself in your repos as usual, and a team repo
+  carries the owner's copy to every teammate. Teammates still on 1.0.0 receive shared
+  chats too and can open them with `/resume` in Claude; the Shared chats list needs 1.1.0.
+
 ## 1.0.0
 
 First release.
